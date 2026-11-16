@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Колесо Соколова</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg1:#1a1033;--bg2:#0d0820;--card:rgba(255,255,255,.07);--line:rgba(255,255,255,.12);--text:#f4f0ff;--muted:#a79cc9;--accent:#ff5fa2;--accent2:#7c5cff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text);background:radial-gradient(1200px 700px at 50% -10%,#3b1f7a 0%,var(--bg1) 45%,var(--bg2) 100%) fixed;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 24px);display:flex;flex-direction:column;align-items:center;gap:16px}
+header{width:100%;max-width:420px;display:flex;justify-content:space-between;align-items:center}
+h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.2px}
+.icon{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:18px;cursor:pointer}
+.stage{position:relative;width:min(88vw,360px);aspect-ratio:1}
+.stage::before{content:"";position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,255,.45),transparent 68%);filter:blur(14px)}
+canvas{position:relative;width:100%;height:100%;display:block;touch-action:manipulation}
+.pointer{position:absolute;left:50%;top:-10px;width:34px;height:42px;margin-left:-17px;transform-origin:50% 12%;z-index:3;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.panel{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.row{display:flex;gap:8px}
+input{flex:1;min-width:0;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:12px;color:var(--text);font-size:16px;padding:12px 14px;outline:none}
+input:focus{border-color:var(--accent2)}
+.add{border:0;border-radius:12px;padding:0 18px;font-size:22px;color:#fff;background:linear-gradient(135deg,var(--accent2),var(--accent));cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;max-height:150px;overflow-y:auto}
+.chip{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 12px;border-radius:999px;font-size:14px;background:rgba(255,255,255,.08);border:1px solid var(--line);animation:pop .25s ease}
+.chip i{width:9px;height:9px;border-radius:50%}
+.chip button{width:22px;height:22px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:var(--text);cursor:pointer;line-height:1}
+.hint{color:var(--muted);font-size:13px;margin:10px 2px 0}
+.spin{width:100%;max-width:420px;border:0;border-radius:18px;padding:17px;font-size:18px;font-weight:700;color:#fff;letter-spacing:.5px;cursor:pointer;background:linear-gradient(135deg,var(--accent2),var(--accent));box-shadow:0 10px 28px rgba(255,95,162,.35);transition:transform .1s,opacity .2s}
+.spin:active{transform:scale(.98)}
+.spin:disabled{opacity:.4;box-shadow:none}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,4,20,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:10;padding:20px}
+.modal.show{display:flex}
+.win{width:100%;max-width:360px;text-align:center;background:linear-gradient(160deg,#2b1a5c,#170d33);border:1px solid var(--line);border-radius:26px;padding:28px 20px 20px;animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+.win small{color:var(--muted);letter-spacing:2px;text-transform:uppercase;font-size:12px}
+.win h2{margin:10px 0 22px;font-size:32px;word-break:break-word;background:linear-gradient(135deg,#fff,var(--c,#ffb3d6));-webkit-background-clip:text;background-clip:text;color:transparent}
+.win .btns{display:flex;gap:8px}
+.win button{flex:1;padding:13px 8px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:15px;cursor:pointer}
+.win button.main{border:0;background:linear-gradient(135deg,var(--accent2),var(--accent));font-weight:700}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.num{display:flex;flex-direction:column}
+.num h3{margin:0 0 12px;font-size:17px}
+.range{align-items:center}
+.range input{text-align:center}
+.range span{color:var(--muted)}
+.slot{--h:84px;min-height:calc(var(--h) + 26px);display:flex;justify-content:center;align-items:center;gap:6px;margin:14px 0;padding:12px;border-radius:18px;background:rgba(0,0,0,.35);border:1px solid var(--line);transition:box-shadow .4s,border-color .4s}
+.slot.done{box-shadow:0 0 44px rgba(255,95,162,.55),inset 0 0 24px rgba(124,92,255,.35);border-color:var(--accent)}
+.ph{font-size:56px;font-weight:800;color:var(--muted)}
+.sign{font-size:56px;font-weight:800;margin-right:2px}
+.reel{height:var(--h);overflow:hidden;border-radius:12px;position:relative;background:linear-gradient(#120a2b,#2a1a5c 50%,#120a2b);border:1px solid var(--line)}
+.reel::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(rgba(10,5,25,.85),transparent 30%,transparent 70%,rgba(10,5,25,.85))}
+.strip{will-change:transform}
+.strip.blur{filter:blur(2.5px)}
+.strip>div{height:var(--h);line-height:var(--h);text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
+.reel.lock{animation:lock .4s ease-out}
+@keyframes lock{0%{transform:scale(1.2);box-shadow:0 0 22px #ff5fa2}100%{transform:scale(1);box-shadow:none}}
+.alt{margin-top:2px;max-width:none;background:linear-gradient(135deg,#ff9a3c,var(--accent))}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:20}
+h1{flex:1;text-align:center;font-size:18px}
+.view{width:100%;display:none;flex-direction:column;align-items:center;gap:16px}
+.view.active{display:flex;animation:pop .3s ease}
+.hero{text-align:center;margin-top:6px;max-width:420px}
+.hero .big{font-size:72px;line-height:1;animation:float 3s ease-in-out infinite;filter:drop-shadow(0 8px 18px rgba(124,92,255,.6))}
+.hero h2{margin:12px 0 6px;font-size:26px}
+.hero p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-8px) rotate(3deg)}}
+.cards{width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px}
+.card{display:flex;align-items:center;gap:14px;text-align:left;width:100%;padding:16px;border-radius:20px;color:var(--text);font:inherit;cursor:pointer;background:var(--card);border:1px solid var(--line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:transform .12s,border-color .2s}
+.card:active{transform:scale(.97);border-color:var(--accent2)}
+.card .ic{font-size:34px;width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent2),var(--accent));flex:none}
+.card b{display:block;font-size:17px}
+.card small{display:block;color:var(--muted);font-size:13px;margin-top:3px;line-height:1.35}
+.stats{display:flex;gap:8px;width:100%;max-width:420px}
+.pill{flex:1;text-align:center;padding:10px 6px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-size:13px;color:var(--muted)}
+.pill b{display:block;font-size:22px;color:var(--text)}
+.bstage{position:relative;width:min(92vw,400px);aspect-ratio:320/300;border-radius:26px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer;background:radial-gradient(circle at 50% 30%,#3b2a73,#1a1033 75%);border:1px solid var(--line)}
+#bird{width:100%;height:100%;display:block}
+.finger{position:absolute;font-size:46px;pointer-events:none;transform:translate(-30%,-85%);opacity:0;transition:opacity .15s;z-index:2;filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
+.finger.on{opacity:1}
+.flash{position:absolute;inset:0;background:radial-gradient(circle,rgba(255,40,70,0),rgba(255,40,70,.7));opacity:0;pointer-events:none}
+.flash.go{animation:fl .55s ease-out}
+@keyframes fl{0%{opacity:1}100%{opacity:0}}
+.say{position:absolute;left:0;right:0;top:12px;text-align:center;font-weight:800;font-size:18px;pointer-events:none;opacity:0;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.say.big{font-size:46px;color:#ff5a6e}
+.say.go{animation:sayA 1.1s ease-out}
+@keyframes sayA{0%{opacity:0;transform:translateY(10px) scale(.8)}15%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
+.heart{position:absolute;pointer-events:none;font-size:26px;animation:hup .9s ease-out forwards}
+@keyframes hup{from{opacity:1;transform:translateY(0) scale(.6)}to{opacity:0;transform:translateY(-70px) scale(1.2)}}
+.hint2{color:var(--muted);font-size:14px;text-align:center;max-width:420px;margin:0;line-height:1.4}
+.hint2 b{color:var(--text)}
+.idle{transform-origin:165px 135px;animation:idle 4.5s ease-in-out infinite}
+@keyframes idle{0%,100%{transform:rotate(-1.5deg)}50%{transform:rotate(2deg) translateY(1px)}}
+#head{transform-origin:165px 135px}
+#up{transform-origin:200px 112px}
+#lo{transform-origin:200px 128px}
+#lid{transform-box:fill-box;transform-origin:50% 0;transform:scaleY(0);animation:blink 5s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(0)}95%{transform:scaleY(1)}}
+#bird.pet #lid{animation:none;transform:scaleY(.65)}
+#bird.pet #head{animation:nod .5s ease-out}
+@keyframes nod{0%{transform:rotate(0)}35%{transform:rotate(7deg) translateY(5px)}100%{transform:rotate(0)}}
+#bird.bite #head{animation:lunge .5s cubic-bezier(.2,1.5,.4,1)}
+@keyframes lunge{0%{transform:none}25%{transform:translate(22px,10px) rotate(8deg)}100%{transform:none}}
+#bird.bite #up{animation:bUp .5s}
+#bird.bite #lo{animation:bLo .5s}
+@keyframes bUp{0%{transform:none}10%{transform:rotate(-18deg)}30%{transform:rotate(1deg)}100%{transform:none}}
+@keyframes bLo{0%{transform:none}10%{transform:rotate(16deg)}30%{transform:rotate(-1deg)}100%{transform:none}}
+</style>
+</head>
+<body>
+<header>
+  <button class="icon" id="back" aria-label="Назад" style="visibility:hidden">←</button>
+  <h1 id="ttl"></h1>
+  <button class="icon" id="snd" aria-label="Звук">🔊</button>
+</header>
+
+<section class="view" id="v-home">
+  <div class="hero">
+    <div class="big">🦅</div>
+    <h2 id="hello"></h2>
+    <p id="sub"></p>
+  </div>
+  <div class="cards">
+    <button class="card" data-go="wheel"><span class="ic">🎡</span><span><b>Колесо Соколова</b><small>Вписал варианты, крутанул — судьба решила</small></span></button>
+    <button class="card" data-go="num"><span class="ic">🎲</span><span><b>Случайное число</b><small>Задал диапазон, барабаны крутятся — выпало число</small></span></button>
+    <button class="card" data-go="bird"><span class="ic">🪶</span><span><b>Погладь сокола</b><small>Шанс 1 к 8, что цапнет за палец. Рискнёшь?</small></span></button>
+  </div>
+</section>
+
+<section class="view" id="v-wheel">
+<div class="stage">
+  <svg class="pointer" id="ptr" viewBox="0 0 34 42"><path d="M17 40 L3 12 A16 16 0 1 1 31 12 Z" fill="#fff"/><circle cx="17" cy="14" r="5.5" fill="#7c5cff"/></svg>
+  <canvas id="wheel"></canvas>
+</div>
+
+<button class="spin" id="spin">Крутить</button>
+
+<div class="panel">
+  <form class="row" id="form" onsubmit="return false">
+    <input id="inp" maxlength="40" placeholder="Новый вариант…" autocomplete="off" enterkeyhint="done">
+    <button class="add" id="add" type="button" aria-label="Добавить">+</button>
+  </form>
+  <div class="chips" id="chips"></div>
+  <p class="hint" id="hint"></p>
+</div>
+
+</section>
+
+<section class="view" id="v-num">
+<div class="panel num">
+  <h3>🎲 Случайное число</h3>
+  <div class="row range">
+    <input id="nmin" type="number" inputmode="numeric" value="1" aria-label="От">
+    <span>—</span>
+    <input id="nmax" type="number" inputmode="numeric" value="10" aria-label="До">
+  </div>
+  <div class="slot" id="slot"><span class="ph">?</span></div>
+  <button class="spin alt" id="roll">Бросить</button>
+</div>
+
+</section>
+
+<section class="view" id="v-bird">
+  <div class="stats">
+    <div class="pill">Серия<b id="sStreak">0</b></div>
+    <div class="pill">Рекорд<b id="sBest">0</b></div>
+    <div class="pill">Укусов<b id="sBites">0</b></div>
+  </div>
+  <div class="bstage" id="bstage">
+    <svg id="bird" viewBox="0 0 320 300">
+      <defs>
+        <linearGradient id="gb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b7790"/><stop offset="1" stop-color="#3a4254"/></linearGradient>
+        <linearGradient id="gw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a5230"/><stop offset="1" stop-color="#4a2f18"/></linearGradient>
+      </defs>
+      <rect x="18" y="252" width="284" height="22" rx="11" fill="url(#gw)"/>
+      <path d="M92 215 L28 262 L96 262 L120 245 Z" fill="#323a4a"/>
+      <ellipse cx="140" cy="202" rx="68" ry="62" fill="url(#gb)"/>
+      <ellipse cx="178" cy="208" rx="36" ry="46" fill="#f2e6d2"/>
+      <g fill="#8a6a45" opacity=".7"><circle cx="170" cy="190" r="3"/><circle cx="188" cy="198" r="3"/><circle cx="174" cy="212" r="3"/><circle cx="192" cy="220" r="3"/><circle cx="178" cy="232" r="3"/></g>
+      <path d="M82 168 Q52 228 92 262 Q140 242 150 190 Q120 165 82 168Z" fill="#2c3342"/>
+      <path d="M92 190 Q84 225 104 246 M112 184 Q108 220 124 240" stroke="#4a5368" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <ellipse cx="152" cy="252" rx="14" ry="6" fill="#f5c842"/><ellipse cx="184" cy="252" rx="14" ry="6" fill="#f5c842"/>
+      <g class="idle"><g id="head">
+        <circle cx="165" cy="115" r="46" fill="#3b4354"/>
+        <path d="M150 140 Q175 160 205 128 Q190 105 150 112Z" fill="#efe4cf"/>
+        <path d="M172 126 Q172 156 156 172 Q186 166 192 132Z" fill="#1c212d"/>
+        <path d="M168 96 Q184 88 200 96" stroke="#1c212d" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <circle cx="182" cy="108" r="11" fill="#f5c842"/><circle cx="184" cy="108" r="6" fill="#111"/><circle cx="186" cy="105" r="2" fill="#fff"/>
+        <ellipse id="lid" cx="182" cy="108" rx="12" ry="12" fill="#3b4354"/>
+        <path id="lo" d="M202 127 Q232 128 240 139 Q218 147 200 135Z" fill="#b8902f"/>
+        <path id="up" d="M198 100 Q248 94 252 140 Q230 123 198 124Z" fill="#e0bb4e"/>
+        <circle cx="214" cy="108" r="2" fill="#7a5a14"/>
+      </g></g>
+    </svg>
+    <div class="finger" id="finger">☝️</div>
+    <div class="flash" id="flash"></div>
+    <div class="say" id="say"></div>
+  </div>
+  <p class="hint2" id="bhint">Тапай или води пальцем по соколу, только аккуратно. Шанс, что цапнет: <b>12,5%</b> (1 из 8)</p>
+</section>
+
+<canvas id="fx"></canvas>
+
+<div class="modal" id="modal">
+  <div class="win" id="win">
+    <small>Выпало</small>
+    <h2 id="res"></h2>
+    <div class="btns">
+      <button id="rm">Убрать</button>
+      <button class="main" id="again">Ещё раз</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TAU = Math.PI * 2;
+const $ = id => document.getElementById(id);
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { try { tg.ready(); tg.expand(); tg.setHeaderColor('#1a1033'); tg.setBackgroundColor('#0d0820'); } catch (e) {} }
+const haptic = t => { try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t || 'light'); } catch (e) {} };
+
+let options = ['Кино', 'Кафе'];
+let rot = 0, spinning = false, soundOn = true;
+try {
+  const s = JSON.parse(localStorage.getItem('wheel-options') || 'null');
+  if (Array.isArray(s) && s.length) options = s.slice(0, 60);
+  soundOn = localStorage.getItem('wheel-sound') !== '0';
+} catch (e) {}
+const save = () => { try { localStorage.setItem('wheel-options', JSON.stringify(options)); } catch (e) {} };
+
+const color = (i, a) => `hsl(${(i * 137.5 + 260) % 360} ${a ? 78 : 72}% ${a ? 62 : 58}%)`;
+
+/* ---------- canvas ---------- */
+const cv = $('wheel'), ctx = cv.getContext('2d');
+let size = 0;
+function resize() {
+  const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  if (!r.width) return;
+  size = r.width; cv.width = cv.height = Math.round(size * d);
+  ctx.setTransform(d, 0, 0, d, 0, 0); draw();
+}
+function draw() {
+  if (!size) return;
+  const c = size / 2, R = c - 6, n = options.length;
+  ctx.clearRect(0, 0, size, size);
+  ctx.save(); ctx.translate(c, c);
+  // outer ring
+  ctx.beginPath(); ctx.arc(0, 0, R + 3, 0, TAU);
+  ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 18; ctx.fill(); ctx.shadowBlur = 0;
+  if (n < 2) {
+    ctx.beginPath(); ctx.arc(0, 0, R - 8, 0, TAU); ctx.fillStyle = '#2a1f4d'; ctx.fill();
+    ctx.fillStyle = '#a79cc9'; ctx.textAlign = 'center'; ctx.font = '600 17px -apple-system,sans-serif';
+    ctx.fillText('Добавь минимум', 0, -4); ctx.fillText('два варианта', 0, 20);
+  } else {
+    const arc = TAU / n, r2 = R - 8;
+    for (let i = 0; i < n; i++) {
+      const a0 = -Math.PI / 2 + rot + i * arc, a1 = a0 + arc;
+      const g = ctx.createRadialGradient(0, 0, r2 * .15, 0, 0, r2);
+      g.addColorStop(0, color(i, 1)); g.addColorStop(1, color(i, 0));
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, r2, a0, a1); ctx.closePath();
+      ctx.fillStyle = g; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5; ctx.stroke();
+      // label
+      ctx.save(); ctx.rotate(a0 + arc / 2); ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      const fs = Math.max(11, Math.min(20, 300 / Math.max(n, 6) + 6));
+      ctx.font = `700 ${fs}px -apple-system,"Segoe UI",sans-serif`;
+      let t = options[i], maxW = r2 - 52;
+      while (t.length > 1 && ctx.measureText(t).width > maxW) t = t.slice(0, -2) + '…';
+      ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 4;
+      ctx.fillText(t, r2 - 16, 0); ctx.restore();
+    }
+    // dots on rim
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + rot + i * arc;
+      ctx.beginPath(); ctx.arc(Math.cos(a) * (R - 3), Math.sin(a) * (R - 3), 2.6, 0, TAU);
+      ctx.fillStyle = '#fff'; ctx.fill();
+    }
+  }
+  // hub
+  const hg = ctx.createRadialGradient(-4, -4, 2, 0, 0, 30);
+  hg.addColorStop(0, '#fff'); hg.addColorStop(1, '#cfc4ff');
+  ctx.beginPath(); ctx.arc(0, 0, 28, 0, TAU); ctx.fillStyle = hg;
+  ctx.shadowColor = 'rgba(0,0,0,.4)'; ctx.shadowBlur = 10; ctx.fill(); ctx.shadowBlur = 0;
+  ctx.beginPath(); ctx.arc(0, 0, 9, 0, TAU); ctx.fillStyle = '#7c5cff'; ctx.fill();
+  ctx.restore();
+}
+
+/* ---------- sound ---------- */
+let ac = null;
+function audio() {
+  if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (ac && ac.state === 'suspended') ac.resume();
+  return ac;
+}
+function tone(freq, dur, type, vol, when) {
+  const a = audio(); if (!a || !soundOn) return;
+  const t = a.currentTime + (when || 0), o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const tick = speed => { tone(900 + Math.min(speed, 1) * 500, 0.05, 'triangle', 0.09); };
+const fanfare = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.35, 'sine', 0.12, i * 0.11));
+
+/* ---------- spin ---------- */
+const ptr = $('ptr');
+function flick() {
+  ptr.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-22deg)' }, { transform: 'rotate(0)' }], { duration: 110, easing: 'ease-out' });
+}
+const idxAt = r => Math.floor((((-r) % TAU) + TAU) % TAU / (TAU / options.length));
+let winner = -1;
+
+function spin() {
+  if (spinning || options.length < 2) return;
+  audio(); spinning = true; $('spin').disabled = true;
+  const n = options.length, arc = TAU / n;
+  winner = Math.floor(Math.random() * n);
+  const jitter = (Math.random() - 0.5) * 0.7;
+  const target = -((winner + 0.5 + jitter) * arc);
+  const delta = ((((target - rot) % TAU) + TAU) % TAU);
+  const start = rot, end = rot + TAU * (5 + Math.floor(Math.random() * 3)) + delta;
+  const dur = 5200 + Math.random() * 800, t0 = performance.now();
+  let last = idxAt(rot), prevT = t0, prevR = rot;
+  haptic('medium');
+  (function frame(now) {
+    const p = Math.min((now - t0) / dur, 1), e = 1 - Math.pow(1 - p, 4);
+    rot = start + (end - start) * e;
+    const i = idxAt(rot);
+    if (i !== last) {
+      const v = Math.abs(rot - prevR) / Math.max(now - prevT, 1) * 16 / arc;
+      tick(v); flick(); haptic('light'); last = i;
+    }
+    prevT = now; prevR = rot; draw();
+    if (p < 1) requestAnimationFrame(frame); else finish();
+  })(t0);
+}
+function finish() {
+  spinning = false; $('spin').disabled = options.length < 2;
+  fanfare(); haptic('heavy'); burst(cv);
+  $('res').textContent = options[winner];
+  $('win').style.setProperty('--c', color(winner, 1));
+  $('modal').classList.add('show');
+}
+
+/* ---------- ui ---------- */
+function render() {
+  const box = $('chips'); box.innerHTML = '';
+  options.forEach((o, i) => {
+    const c = document.createElement('div'); c.className = 'chip';
+    const dot = document.createElement('i'); dot.style.background = color(i, 1);
+    const tx = document.createElement('span'); tx.textContent = o;
+    const b = document.createElement('button'); b.textContent = '×'; b.setAttribute('aria-label', 'Удалить');
+    b.onclick = () => { if (!spinning) { options.splice(i, 1); update(); } };
+    c.append(dot, tx, b); box.append(c);
+  });
+  $('hint').textContent = options.length < 2 ? 'Нужно минимум два варианта' : `Вариантов: ${options.length}`;
+  $('spin').disabled = spinning || options.length < 2;
+}
+function update() { save(); render(); draw(); }
+function addOpt() {
+  const v = $('inp').value.trim();
+  if (!v || spinning || options.length >= 60) return;
+  options.push(v); $('inp').value = ''; update(); haptic('light'); tone(660, 0.08, 'sine', 0.08);
+}
+$('add').onclick = addOpt;
+$('inp').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addOpt(); } });
+$('spin').onclick = spin;
+cv.onclick = spin;
+$('again').onclick = () => { $('modal').classList.remove('show'); setTimeout(spin, 150); };
+$('rm').onclick = () => { $('modal').classList.remove('show'); options.splice(winner, 1); update(); };
+$('modal').onclick = e => { if (e.target === $('modal')) $('modal').classList.remove('show'); };
+$('snd').onclick = () => {
+  soundOn = !soundOn; $('snd').textContent = soundOn ? '🔊' : '🔇';
+  try { localStorage.setItem('wheel-sound', soundOn ? '1' : '0'); } catch (e) {}
+  if (soundOn) tone(784, 0.1, 'sine', 0.1);
+};
+$('snd').textContent = soundOn ? '🔊' : '🔇';
+/* ---------- random number (slot reels) ---------- */
+const slot = $('slot'), CH = 84;
+let rolling = false;
+
+function roll() {
+  if (rolling) return;
+  let a = parseInt($('nmin').value, 10), b = parseInt($('nmax').value, 10);
+  if (isNaN(a) || isNaN(b)) {
+    slot.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-8px)' }, { transform: 'translateX(8px)' }, { transform: 'translateX(0)' }], { duration: 250 });
+    return;
+  }
+  audio();
+  if (a > b) [a, b] = [b, a];
+  a = Math.max(a, -999999999); b = Math.min(b, 999999999);
+  $('nmin').value = a; $('nmax').value = b;
+  const v = Math.floor(Math.random() * (b - a + 1)) + a;
+  rolling = true; $('roll').disabled = true;
+  slot.innerHTML = ''; slot.classList.remove('done');
+
+  const s = String(v), digits = s.replace('-', '').length;
+  const w = Math.min(54, (slot.clientWidth - 26 - 6 * digits) / digits);
+  const fs = Math.min(64, w * 1.15);
+  const reels = [];
+  if (s[0] === '-') { const m = document.createElement('span'); m.className = 'sign'; m.textContent = '−'; slot.append(m); }
+  let i = 0;
+  for (const ch of s.replace('-', '')) {
+    const cycles = 3 + i * 2, cells = cycles * 10 + 10;
+    const reel = document.createElement('div'); reel.className = 'reel'; reel.style.width = w + 'px';
+    const strip = document.createElement('div'); strip.className = 'strip'; strip.style.fontSize = fs + 'px';
+    for (let k = 0; k < cells; k++) { const c = document.createElement('div'); c.textContent = k % 10; strip.append(c); }
+    reel.append(strip); slot.append(reel);
+    reels.push({ reel, strip, idx: cycles * 10 + (+ch), dur: 1500 + i * 600 });
+    i++;
+  }
+  slot.offsetHeight; // reflow
+  const total = reels[reels.length - 1].dur, t0 = performance.now();
+  let done = 0, alive = true;
+  (function ticker() {
+    if (!alive) return;
+    const el = performance.now() - t0;
+    tick(0.3 + Math.random() * 0.7);
+    setTimeout(ticker, 50 + 190 * Math.min(el / total, 1));
+  })();
+  haptic('medium');
+  reels.forEach(r => {
+    r.strip.classList.add('blur');
+    r.strip.style.transition = `transform ${r.dur}ms cubic-bezier(.1,.7,.15,1.04)`;
+    r.strip.style.transform = `translateY(${-r.idx * CH}px)`;
+    setTimeout(() => r.strip.classList.remove('blur'), r.dur - 700);
+    setTimeout(() => {
+      r.reel.classList.add('lock');
+      tone(150, 0.18, 'sine', 0.22); tone(520, 0.07, 'square', 0.05); haptic('medium');
+      if (++done === reels.length) { alive = false; endRoll(); }
+    }, r.dur);
+  });
+}
+function endRoll() {
+  slot.classList.add('done'); fanfare(); haptic('heavy'); burst(slot);
+  rolling = false; $('roll').disabled = false;
+}
+$('roll').onclick = roll;
+
+/* ---------- confetti ---------- */
+function burst(el) {
+  const fx = $('fx'), d = window.devicePixelRatio || 1, c = fx.getContext('2d');
+  fx.width = innerWidth * d; fx.height = innerHeight * d; c.setTransform(d, 0, 0, d, 0, 0);
+  const r = el.getBoundingClientRect(), x0 = r.left + r.width / 2, y0 = r.top + r.height / 2;
+  const ps = Array.from({ length: 110 }, () => ({
+    x: x0, y: y0, vx: (Math.random() - .5) * 16, vy: -Math.random() * 13 - 3, s: 5 + Math.random() * 6,
+    h: Math.random() * 360, rt: Math.random() * 6, vr: (Math.random() - .5) * .4, l: 1
+  }));
+  (function f() {
+    c.clearRect(0, 0, innerWidth, innerHeight); let alive = 0;
+    for (const p of ps) {
+      p.vy += .45; p.x += p.vx; p.y += p.vy; p.rt += p.vr; p.l -= .011;
+      if (p.l <= 0) continue; alive++;
+      c.save(); c.translate(p.x, p.y); c.rotate(p.rt); c.globalAlpha = p.l;
+      c.fillStyle = `hsl(${p.h} 90% 62%)`; c.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * .6); c.restore();
+    }
+    if (alive) requestAnimationFrame(f); else c.clearRect(0, 0, innerWidth, innerHeight);
+  })();
+}
+
+/* ---------- navigation + greeting ---------- */
+const TITLES = { home: '', wheel: '🎡 Колесо Соколова', num: '🎲 Случайное число', bird: '🪶 Погладь сокола' };
+function go(v) {
+  Object.keys(TITLES).forEach(x => $('v-' + x).classList.toggle('active', x === v));
+  $('back').style.visibility = v === 'home' ? 'hidden' : 'visible';
+  $('ttl').textContent = TITLES[v];
+  window.scrollTo(0, 0);
+  if (v === 'wheel') requestAnimationFrame(resize);
+  haptic('light'); tone(660, 0.06, 'sine', 0.07);
+}
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+$('back').onclick = () => { if (!spinning && !rolling) go('home'); };
+
+const uname = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) || 'братан';
+const hellos = [`Здарова, ${uname}! 🤝`, `Опа, ${uname}! Заходи 🔥`, `Привет, ${uname}! Рад тебя видеть 😎`];
+$('hello').textContent = hellos[Math.floor(Math.random() * hellos.length)];
+$('sub').textContent = 'Спор, выбор или просто скука — всё решим по-братски. Выбирай, чем займёмся 👇';
+
+/* ---------- falcon ---------- */
+const P_BITE = 0.125;
+const bs = $('bstage'), fg = $('finger'), bird = $('bird');
+let down = false, biting = false, streak = 0, best = 0, bites = 0, lx = 0, ly = 0, ft = null;
+try {
+  const st = JSON.parse(localStorage.getItem('bird-stats') || 'null');
+  if (st) { best = st.best | 0; bites = st.bites | 0; }
+} catch (e) {}
+function bstats() {
+  $('sStreak').textContent = streak; $('sBest').textContent = best; $('sBites').textContent = bites;
+  try { localStorage.setItem('bird-stats', JSON.stringify({ best, bites })); } catch (e) {}
+}
+function noise(dur, vol, when) {
+  const a = audio(); if (!a || !soundOn) return;
+  const n = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const s = a.createBufferSource(), g = a.createGain(); g.gain.value = vol;
+  s.buffer = buf; s.connect(g); g.connect(a.destination); s.start(a.currentTime + (when || 0));
+}
+function screech() {
+  const a = audio(); if (!a || !soundOn) return;
+  const t = a.currentTime, o = a.createOscillator(), g = a.createGain();
+  o.type = 'sawtooth'; o.frequency.setValueAtTime(2600, t + .05); o.frequency.exponentialRampToValueAtTime(1300, t + .3);
+  g.gain.setValueAtTime(0.0001, t + .05); g.gain.exponentialRampToValueAtTime(.07, t + .07); g.gain.exponentialRampToValueAtTime(.0001, t + .32);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + .35);
+}
+function playAnim(el, cls, ms) {
+  el.classList.remove(cls); void el.getBoundingClientRect(); el.classList.add(cls);
+  setTimeout(() => el.classList.remove(cls), ms);
+}
+function say(text, big) {
+  const s = $('say'); s.textContent = text; s.classList.toggle('big', !!big);
+  s.classList.remove('go'); void s.offsetWidth; s.classList.add('go');
+}
+function hideFinger(ms) { clearTimeout(ft); ft = setTimeout(() => fg.classList.remove('on'), ms); }
+function pos(e) {
+  const r = bs.getBoundingClientRect(); lx = e.clientX - r.left; ly = e.clientY - r.top;
+  fg.style.left = lx + 'px'; fg.style.top = ly + 'px';
+}
+function petOk() {
+  streak++; if (streak > best) best = streak; bstats();
+  playAnim(bird, 'pet', 650);
+  tone(120, 0.4, 'sine', 0.1); tone(131, 0.4, 'sine', 0.08); tone(1100 + Math.random() * 300, 0.07, 'sine', 0.035, 0.05);
+  haptic('light');
+  const h = document.createElement('div'); h.className = 'heart';
+  h.textContent = ['❤️', '💛', '🪶', '✨'][Math.floor(Math.random() * 4)];
+  h.style.left = (lx + Math.random() * 40 - 20) + 'px'; h.style.top = (ly - 20) + 'px';
+  bs.append(h); setTimeout(() => h.remove(), 950);
+  const m = ['Мур-р…', 'Сокол доволен 😌', 'Ему нравится', 'Сидит тихо…', 'Ещё чуть-чуть…', 'Какой хороший'];
+  say(m[Math.floor(Math.random() * m.length)], false);
+  $('bhint').innerHTML = `Погладил подряд: <b>${streak}</b>. Шанс, что цапнет: <b>12,5%</b>`;
+}
+function bite() {
+  const was = streak;
+  streak = 0; bites++; bstats(); biting = true;
+  playAnim(bird, 'bite', 600);
+  noise(0.09, 0.35); tone(1900, 0.05, 'square', 0.12); tone(700, 0.1, 'sawtooth', 0.1, 0.06); screech();
+  try { tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('error'); } catch (e) {}
+  bs.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-9px,3px)' }, { transform: 'translate(8px,-3px)' }, { transform: 'translate(-5px,2px)' }, { transform: 'translate(0,0)' }], { duration: 380 });
+  fg.animate([{ transform: 'translate(-30%,-85%) rotate(0)' }, { transform: 'translate(-30%,-85%) rotate(-25deg)' }, { transform: 'translate(-30%,-85%) rotate(18deg)' }, { transform: 'translate(-30%,-85%) rotate(0)' }], { duration: 420 });
+  const fl = $('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+  say('ЦАП!', true);
+  $('bhint').innerHTML = was ? `Цапнул на <b>${was + 1}</b>-м поглаживании. Серия сброшена, погладишь ещё?` : 'Цапнул сразу! Не повезло. Погладишь ещё?';
+  setTimeout(() => { biting = false; }, 650);
+}
+bs.addEventListener('pointerdown', e => {
+  down = true; audio(); pos(e); clearTimeout(ft); fg.classList.add('on');
+  try { bs.setPointerCapture(e.pointerId); } catch (_) {}
+});
+bs.addEventListener('pointermove', e => { if (down) pos(e); });
+bs.addEventListener('pointerup', e => {
+  if (!down) return; down = false; pos(e);
+  if (biting) { hideFinger(250); return; }
+  if (Math.random() < P_BITE) { bite(); hideFinger(800); } else { petOk(); hideFinger(250); }
+});
+bs.addEventListener('pointercancel', () => { down = false; hideFinger(250); });
+bstats();
+
+window.addEventListener('resize', resize);
+render(); resize(); go('home');
+</script>
+</body>
+</html>
